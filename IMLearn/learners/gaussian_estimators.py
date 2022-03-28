@@ -7,6 +7,7 @@ class UnivariateGaussian:
     """
     Class for univariate Gaussian Distribution Estimator
     """
+
     def __init__(self, biased_var: bool = False) -> UnivariateGaussian:
         """
         Estimator for univariate Gaussian mean and variance parameters
@@ -51,7 +52,13 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+
+        self.mu_ = sum(X) / X.size
+        var_sum = 0
+        for s in X:
+            var_sum += (s - self.mu_) ** 2
+
+        self.var_ = (var_sum / (X.size if self.biased_ else X.size - 1)) ** 0.5
 
         self.fitted_ = True
         return self
@@ -75,8 +82,14 @@ class UnivariateGaussian:
         ValueError: In case function was called prior fitting the model
         """
         if not self.fitted_:
-            raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+            raise ValueError(
+                "Estimator must first be fitted before calling `pdf` function")
+        pdfs = np.ndarray(X.size)
+        for i in range(X.size):
+            pdfs[i] = np.exp(
+                -((X[i] - self.mu_) ** 2) / 2 * self.var_) / np.sqrt(
+                2 * np.pi * self.var_)
+        return pdfs
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -97,13 +110,19 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+        temp_sum = 0
+        for i in range(X.size):
+            temp_sum += (X[i] - mu) ** 2
+        return -(X.size / 2) * (
+                np.log(2 * np.pi) + np.log(sigma)) - temp_sum / (
+                       2 * sigma)
 
 
 class MultivariateGaussian:
     """
     Class for multivariate Gaussian Distribution Estimator
     """
+
     def __init__(self):
         """
         Initialize an instance of multivariate Gaussian estimator
@@ -143,8 +162,10 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
+        rows, cols = X.shape
+        self.mu_ = np.sum(X, axis=0) / rows
+        X_gal = np.array([X[i] - self.mu_ for i in range(rows)])
+        self.cov_ = np.dot(X_gal.transpose(), X_gal) / (rows - 1)
         self.fitted_ = True
         return self
 
@@ -167,11 +188,18 @@ class MultivariateGaussian:
         ValueError: In case function was called prior fitting the model
         """
         if not self.fitted_:
-            raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+            raise ValueError(
+                "Estimator must first be fitted before calling `pdf` function")
+        rows, cols = X.shape
+        X_gal = np.array([X[i] - self.mu_ for i in range(rows)])
+        return np.exp(-0.5 * np.linalg.multi_dot(X_gal.transpose(),
+                                                 np.linalg.inv(self.cov_),
+                                                 X_gal)) / np.sqrt(
+            (2 * np.pi) ** cols * np.linalg.det(self.cov_))
 
     @staticmethod
-    def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
+    def log_likelihood(mu: np.ndarray, cov: np.ndarray,
+                       X: np.ndarray) -> float:
         """
         Calculate the log-likelihood of the data under a specified Gaussian model
 
@@ -189,4 +217,15 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
-        raise NotImplementedError()
+        rows, cols = X.shape
+        X_gal = np.array([X[i] - mu for i in range(rows)])
+
+        temp_sun = 0
+        for i in range(rows):
+            temp_sun += np.linalg.multi_dot([X_gal[i].transpose(),
+                                 np.linalg.inv(cov),
+                                 X_gal[i]])
+        return -(X.size / 2) * (cols * np.log(2 * np.pi) + np.log(
+            np.linalg.det(cov))) - 0.5 * temp_sun
+
+

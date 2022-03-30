@@ -23,7 +23,23 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    raise NotImplementedError()
+    df = pd.read_csv(filename)
+    series = df.loc[:, ["price"]]
+
+    df['yr_sold'] = df['date'].str[:4].astype(float)
+    df['is_renovated'] = np.where(df['yr_renovated'] == 0, 1, 0)
+    df['house_age'] = np.where(df['yr_renovated'],df['yr_sold'] - df['yr_renovated'],
+                               df['yr_sold'] - df['yr_built'])
+    zip_dum = pd.get_dummies(df['zipcode'])
+
+    df = df.loc[:,['bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors',
+                 'waterfront', 'view', 'condition', 'grade', 'sqft_above',
+                 'sqft_basement', 'sqft_living15', 'sqft_lot15', 'house_age',
+                  'lat', 'long','is_renovated', 'zipcode']]
+    df = pd.get_dummies(df, columns=['zipcode'], drop_first=True)
+    return df, series
+
+
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -43,19 +59,27 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
+    for feature in X.columns:
+        #pirson = np.cov(X[feature], y) / (np.std(X[feature]) * np.std(y))
+        y = y.to_numpy().ravel()
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=X[feature], y=y, mode="markers"))
+        title = "Pearson Correlation "  + " of feature " + feature ##todo: add pirson
+        fig.update_layout(title=title,
+                      xaxis_title="feature",
+                      yaxis_title="response")
+        fig.write_image(output_path + feature + ".png")
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
-
+    X,y = load_data('../datasets/house_prices.csv')
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
-
+    # raise NotImplementedError()
+    feature_evaluation(X,y, "../feature_evaluation/")
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
+    train_X, train_y, test_X, test_y = split_train_test(X,y)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -64,4 +88,14 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+    lr = LinearRegression()
+    x_axias = np.arange(10,100)
+    y_axias = np.array(90)
+    for p in range(10, 100):
+        average = 0
+        for j in range(10):
+            lr.fit(train_X.sample(frac=p).to_numpy(),train_y.to_numpy())
+            average += lr._loss(test_X.to_numpy(), test_y.to_numpy())
+        average /= 10
+        y_axias[i] = average
+

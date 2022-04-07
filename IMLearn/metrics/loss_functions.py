@@ -17,9 +17,10 @@ def mean_square_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     MSE of given predictions
     """
     mse = 0
-    for i in range(y_true):
+    for i in range(len(y_true)):
         mse += ((y_true[i] - y_pred[i]) ** 2)
-    return mse
+    return mse / len(y_true)
+
 
 
 def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray,
@@ -40,13 +41,8 @@ def misclassification_error(y_true: np.ndarray, y_pred: np.ndarray,
     -------
     Misclassification of given predictions
     """
-    misclassification = 0
-    for i in range(y_true.size):
-        if (y_true[i] == y_pred[i]):
-            misclassification += 1
-    if normalize:
-        misclassification /= y_true.size
-    return misclassification
+    raise NotImplementedError()
+
 
 
 def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -64,12 +60,8 @@ def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     Accuracy of given predictions
     """
-    number_of_samples = y_true.size
-    correct_class = 0
-    for i in range(number_of_samples):
-        if y_pred[i] == y_true[i]:
-            correct_class+=1
-    return correct_class/number_of_samples
+    raise NotImplementedError()
+
 
 
 def cross_entropy(y_true: np.ndarray, y_pred: np.ndarray) -> float:

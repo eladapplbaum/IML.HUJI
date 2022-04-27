@@ -1,6 +1,11 @@
 from typing import NoReturn
+
+from .. import MultivariateGaussian
 from ...base import BaseEstimator
 import numpy as np
+
+from ...metrics import misclassification_error
+
 
 class GaussianNaiveBayes(BaseEstimator):
     """
@@ -27,6 +32,7 @@ class GaussianNaiveBayes(BaseEstimator):
         super().__init__()
         self.classes_, self.mu_, self.vars_, self.pi_ = None, None, None, None
 
+
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         fits a gaussian naive bayes model
@@ -39,7 +45,14 @@ class GaussianNaiveBayes(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        self.classes_ = np.unique(y)
+
+        self.pi_ = np.array(
+            [np.mean(np.count_nonzero(y == k)) for k in self.classes_])
+        self.mu_ = np.stack(
+            [np.mean(X[np.array(np.flatnonzero(y == k))], axis=0) for k in
+             self.classes_])
+        self.vars_ = np.array([np.var(X[:,i]) for i in range(X.shape[1])])
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -74,9 +87,12 @@ class GaussianNaiveBayes(BaseEstimator):
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
-
-        raise NotImplementedError()
-
+        likelihoods = np.zeros(X.shape[0], self.classes_.size)
+        for k in range(self.classes_.size):
+            g = MultivariateGaussian()
+            g.mu_ = self.mu_[k]
+            g.cov_ = np.diag(self.vars_[k])
+            likelihoods[k] = g.pdf(X)
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under misclassification loss function
@@ -94,4 +110,4 @@ class GaussianNaiveBayes(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        return misclassification_error(y, self.predict(X))

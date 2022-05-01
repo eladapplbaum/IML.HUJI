@@ -78,17 +78,18 @@ class Perceptron(BaseEstimator):
         """
         if (self.include_intercept_):
             X = np.insert(X, 0, 1, axis=1)
-        self.coefs_ = np.zeros(X.shape[1], )
-        iter, changed = 0, True
-        while iter < self.max_iter_ and changed:
-            changed = False
-            for i in range(y.shape[0]):
-                if y[i] * self.coefs_ @ X[i] <= 0:
+        self.coefs_ = np.zeros(X.shape[1])
+        self.fitted_ = True
+        for i in range(self.max_iter_):
+            counter = 0
+            while counter < y.size:
+                if y[counter]*(X[counter] @ self.coefs_) <= 0:
+                    self.coefs_ = self.coefs_ + np.transpose((y[counter]*X[counter]))
+                    self.coefs_ = self.coefs_
                     self.callback_(self, X, y)
-                    self.coefs_ += y[i] * X[i]
-                    self.fitted_ = True
-                    changed = True
-            iter+=1
+                    break
+                else:
+                    counter = counter + 1
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -124,4 +125,4 @@ class Perceptron(BaseEstimator):
             Performance under missclassification loss function
         """
         from ...metrics import misclassification_error
-        return misclassification_error(y, self._predict(X))
+        return misclassification_error(y, self.predict(X))

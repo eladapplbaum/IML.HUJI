@@ -51,7 +51,9 @@ class GaussianNaiveBayes(BaseEstimator):
         self.mu_ = np.stack(
             [np.mean(X[np.array(np.flatnonzero(y == k))], axis=0) for k in
              self.classes_])
-        self.vars_ = np.array([np.var(X[:,i]) for i in range(X.shape[1])])
+        self.vars_ = np.zeros((self.classes_.size, X.shape[1]))
+        for j in range(self.classes_.size):
+            self.vars_[j] = np.array([np.var(X[:,i]) for i in range(X.shape[1]) ])
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -67,7 +69,7 @@ class GaussianNaiveBayes(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return np.argmax(self.likelihood(X), axis=1)
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -86,9 +88,14 @@ class GaussianNaiveBayes(BaseEstimator):
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
-
-        raise NotImplementedError()
-
+        likelihoods = np.zeros((X.shape[0], self.classes_.size))
+        for k in range(self.classes_.size):
+            gaus = MultivariateGaussian()
+            gaus.fitted_ = True
+            gaus.mu_ = self.mu_[k]
+            gaus.cov_ = np.diag(self.vars_[k])
+            likelihoods[:,k] = gaus.pdf(X)
+        return likelihoods
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under misclassification loss function

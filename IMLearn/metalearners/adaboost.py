@@ -54,7 +54,6 @@ class AdaBoost(BaseEstimator):
         self.models_ = []
         self.D_ = np.full(shape=y.shape, fill_value=1 / y.shape[0])
         for t in range(self.iterations_):
-            print(t)
             self.models_.append(self.wl_().fit(X, y * self.D_))
             y_pred = self.models_[t].predict(X)
             eps = np.sum((np.abs(y_pred - y) / 2) * self.D_)
@@ -76,7 +75,7 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.partial_predict(X, X.shape[1])
+        return self.partial_predict(X, self.iterations_)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

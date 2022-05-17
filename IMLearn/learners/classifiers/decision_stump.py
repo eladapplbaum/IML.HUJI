@@ -44,7 +44,7 @@ class DecisionStump(BaseEstimator):
         self.sign_ = 1
         self.j_ = 0
         self.threshold_, min_thr_err = np.inf, np.inf
-        for sign, feature in product([-1, 1], range(X.shape[1])):
+        for sign, feature in product([1, -1], range(X.shape[1])):
             thr, thr_err = self._find_threshold(X[:, feature], y, sign)
             if(thr_err <= min_thr_err):
                 self.threshold_ = thr

@@ -34,6 +34,7 @@ class LassoObjective(BaseModule):
             Should fitted model include an intercept or not
         """
         super().__init__()
+
         raise NotImplementedError()
 
     def compute_output(self, input: np.ndarray, compare=None) -> np.ndarray:

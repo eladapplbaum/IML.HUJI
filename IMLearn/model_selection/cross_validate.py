@@ -44,8 +44,8 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     np.random.shuffle(index)
     index_sub = np.array_split(index, cv)
     for i in range(cv):
-        X_train = np.delete(X, index_sub[i])
-        y_train = np.delete(y, index_sub[i])
+        X_train = np.delete(X, index_sub[i], axis=0)
+        y_train = np.delete(y, index_sub[i], axis=0)
         X_test =  X[index_sub[i], :]
         y_test =  y[index_sub[i]]
         estimator.fit(X_train, y_train)

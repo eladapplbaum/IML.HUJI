@@ -71,7 +71,8 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
 
     # Question 3 - Using best value of k, fit a k-degree polynomial model and report test error
     k = 4
-    print(PolynomialFitting(4).fit(train_X,train_y).loss(test_y,test_X))
+    a = PolynomialFitting(4).fit(train_X,train_y).loss(test_X,test_y)
+    print(PolynomialFitting(4).fit(train_X,train_y).loss(test_X,test_y))
 
 
 def select_regularization_parameter(n_samples: int = 50,

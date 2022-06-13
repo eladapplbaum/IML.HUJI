@@ -39,12 +39,14 @@ class GradientDescent:
         Callable function should receive as input a GradientDescent instance, and any additional
         arguments specified in the `GradientDescent.fit` function
     """
+
     def __init__(self,
                  learning_rate: BaseLR = FixedLR(1e-3),
                  tol: float = 1e-5,
                  max_iter: int = 1000,
                  out_type: str = "last",
-                 callback: Callable[[GradientDescent, ...], None] = default_callback):
+                 callback: Callable[
+                     [GradientDescent, ...], None] = default_callback):
         """
         Instantiate a new instance of the GradientDescent class
 
@@ -119,4 +121,31 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+
+        best = f.weights
+        last_val = f.compute_output(X=X, y=y)
+        w_sum = f.weights
+        num_of_iter = 0
+        for t in range(self.max_iter_):
+            num_of_iter = t
+            eta = self.learning_rate_.lr_step(t=t)
+            val = f.compute_output(X=X, y=y)
+            grad = f.compute_jacobian(X=X, y=y)
+            w1 = f.weights - eta * grad
+            delta = w1 - f.weights
+            if (delta < self.tol_):
+                break
+            if (val > last_val):
+                best = w1
+            f.weights(w1)
+            last_val = val
+            w_sum += f.weights
+            self.callback_(self, [f.weights, val, grad
+                , t, eta, delta])
+
+        if (self.out_type_ == 'last'):
+            return f.weights
+        if (self.out_type_ == 'best'):
+            return best
+        if (self.out_type_ == 'average'):
+            return w_sum / num_of_iter

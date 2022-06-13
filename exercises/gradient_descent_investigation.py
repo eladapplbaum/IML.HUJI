@@ -46,18 +46,22 @@ def plot_descent_path(module: Type[BaseModule],
     fig = plot_descent_path(IMLearn.desent_methods.modules.L1, np.ndarray([[1,1],[0,0]]))
     fig.show()
     """
+
     def predict_(w):
         return np.array([module(weights=wi).compute_output() for wi in w])
 
     from utils import decision_surface
-    return go.Figure([decision_surface(predict_, xrange=xrange, yrange=yrange, density=70, showscale=False),
-                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines", marker_color="black")],
+    return go.Figure([decision_surface(predict_, xrange=xrange, yrange=yrange,
+                                       density=70, showscale=False),
+                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1],
+                                 mode="markers+lines", marker_color="black")],
                      layout=go.Layout(xaxis=dict(range=xrange),
                                       yaxis=dict(range=yrange),
                                       title=f"GD Descent Path {title}"))
 
 
-def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarray], List[np.ndarray]]:
+def get_gd_state_recorder_callback() -> Tuple[
+    Callable[[], None], List[np.ndarray], List[np.ndarray]]:
     """
     Callback generator for the GradientDescent class, recording the objective's value and parameters at each iteration
 
@@ -73,28 +77,57 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+    values = []
+    weights = []
+
+    def callback(w):
+        values.append(w[1][0])
+        weights.append(w[1][1])
+
+    return callback, values, weights
 
 
-def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
-                                 etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+def compare_fixed_learning_rates(
+        init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
+        etas: Tuple[float] = (1, .1, .01, .001)):
+    for model in [L1, L2]:
+        for eta in etas:
+            callback = get_gd_state_recorder_callback()
+            gd = GradientDescent(FixedLR(eta),
+                                 callback=callback[0])
+            gd.fit(model(init), np.empty(0), np.empty(0))
+            plot_descent_path(model, descent_path=np.ndarray(callback[2]),
+                              title=f'model: {model}, eta: {eta}')
+            fig = go.Figure(
+                data=go.Scatter(x=np.array(gd.max_iter_), y=callback[1]))
+            fig.show()
+        raise NotImplementedError()
 
 
-def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
-                                    eta: float = .1,
-                                    gammas: Tuple[float] = (.9, .95, .99, 1)):
+def compare_exponential_decay_rates(
+        init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
+        eta: float = .1,
+        gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    raise NotImplementedError()
 
+    scatters = []
+    callback = get_gd_state_recorder_callback()
+    for gamma in gammas:
+        gd = GradientDescent(ExponentialLR(eta, gamma),
+                             callback=callback[0])
+        gd.fit(L1(init), np.empty(0), np.empty(0))
+        scatters.append(go.Scatter(x=np.array(gd.max_iter_), y=callback[1]))
+        fig = go.Figure(data=scatters)
+        fig.show()
+        if(gamma == .95):
+            raise NotImplementedError
     # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
 
     # Plot descent path for gamma=0.95
-    raise NotImplementedError()
 
 
-def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \
+def load_data(path: str = "../datasets/SAheart.data",
+              train_portion: float = .8) -> \
         Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     """
     Load South-Africa Heart Disease dataset and randomly split into a train- and test portion
@@ -123,7 +156,8 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
     """
     df = pd.read_csv(path)
     df.famhist = (df.famhist == 'Present').astype(int)
-    return split_train_test(df.drop(['chd', 'row.names'], axis=1), df.chd, train_portion)
+    return split_train_test(df.drop(['chd', 'row.names'], axis=1), df.chd,
+                            train_portion)
 
 
 def fit_logistic_regression():

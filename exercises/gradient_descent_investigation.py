@@ -80,9 +80,9 @@ def get_gd_state_recorder_callback() -> Tuple[
     values = []
     weights = []
 
-    def callback(w):
-        values.append(w[1][0])
-        weights.append(w[1][1])
+    def callback(gd, lst):
+        weights.append(lst[0])
+        values.append(lst[1])
 
     return callback, values, weights
 
@@ -90,18 +90,23 @@ def get_gd_state_recorder_callback() -> Tuple[
 def compare_fixed_learning_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
         etas: Tuple[float] = (1, .1, .01, .001)):
-    for model in [L1, L2]:
+    for model, name in [[L1, "L1"], [L2, "L2"]]:
         for eta in etas:
             callback = get_gd_state_recorder_callback()
             gd = GradientDescent(FixedLR(eta),
                                  callback=callback[0])
-            gd.fit(model(init), np.empty(0), np.empty(0))
-            plot_descent_path(model, descent_path=np.ndarray(callback[2]),
-                              title=f'model: {model}, eta: {eta}')
+            gd.fit(model(init.copy()), np.empty(0), np.empty(0))
+            fig = plot_descent_path(model, descent_path=np.array(callback[2]),
+                                    title=f'model: {name}, eta: {eta}')
+            fig.write_image(f'descent_path_fixed_{name}_{eta}.png')
+
             fig = go.Figure(
-                data=go.Scatter(x=np.array(gd.max_iter_), y=callback[1]))
-            fig.show()
-        raise NotImplementedError()
+                data=go.Scatter(x=np.arange(gd.max_iter_), y=callback[1],
+                                mode="markers"))
+            fig.update_layout(title=f"{name} with eta={eta} ",
+                              xaxis_title="Iteration",
+                              yaxis_title="norm")
+            fig.write_image(f'convergence_rate_fixed_{name}_{eta}.png')
 
 
 def compare_exponential_decay_rates(
@@ -111,19 +116,28 @@ def compare_exponential_decay_rates(
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
 
     scatters = []
-    callback = get_gd_state_recorder_callback()
     for gamma in gammas:
+        callback = get_gd_state_recorder_callback()
         gd = GradientDescent(ExponentialLR(eta, gamma),
                              callback=callback[0])
-        gd.fit(L1(init), np.empty(0), np.empty(0))
-        scatters.append(go.Scatter(x=np.array(gd.max_iter_), y=callback[1]))
-        fig = go.Figure(data=scatters)
-        fig.show()
-        if(gamma == .95):
-            raise NotImplementedError
+        gd.fit(L1(init.copy()), np.empty(0), np.empty(0))
+        scatters.append(
+            go.Scatter(x=np.arange(gd.max_iter_), y=callback[1],name=f'gamma={gamma}'))
+
     # Plot algorithm's convergence for the different values of gamma
+    fig = go.Figure(data=scatters)
+    fig.update_layout(title="convergence rate for all decay rates",
+                      xaxis_title="iteration", yaxis_title="norm")
+    fig.write_image(f'exponential_decay_rates_L1_{eta}.png')
 
     # Plot descent path for gamma=0.95
+    callback = get_gd_state_recorder_callback()
+    gd = GradientDescent(ExponentialLR(eta, 0.95),
+                         callback=callback[0])
+    gd.fit(L1(init.copy()), np.empty(0), np.empty(0))
+    fig = plot_descent_path(L1, np.array(callback[2]),
+                            title=f"L1 model with eta={eta} and gama=0.95")
+    fig.write_image(f'exponential_L1_descent_path_gama={0.95}.png')
 
 
 def load_data(path: str = "../datasets/SAheart.data",

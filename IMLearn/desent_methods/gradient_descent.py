@@ -140,11 +140,19 @@ class GradientDescent:
             f.weights = w1
             last_val = val
             w_sum += f.weights
-            self.callback_(self, [f.weights, val, grad, t, eta, delta])
+            self.callback_(solver=self,
+                           weights=f.weights_,
+                           val=f.compute_output(X=X, y=y),
+                           grad=f.compute_jacobian(X=X, y=y),
+                           t=num_of_iter,
+                           eta=eta,
+                           delta=delta)
 
         if (self.out_type_ == 'last'):
             return f.weights
         if (self.out_type_ == 'best'):
+            f.weights = best
             return best
         if (self.out_type_ == 'average'):
+            f.weights = w_sum / num_of_iter
             return w_sum / num_of_iter

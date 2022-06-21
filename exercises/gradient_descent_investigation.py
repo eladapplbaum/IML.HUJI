@@ -80,9 +80,9 @@ def get_gd_state_recorder_callback() -> Tuple[
     values = []
     weights = []
 
-    def callback(gd, lst):
-        weights.append(lst[0])
-        values.append(lst[1])
+    def callback(**kwargs):
+        weights.append(kwargs['weights'])
+        values.append(kwargs['val'])
 
     return callback, values, weights
 
@@ -177,17 +177,26 @@ def load_data(path: str = "../datasets/SAheart.data",
 def fit_logistic_regression():
     # Load and split SA Heard Disease dataset
     X_train, y_train, X_test, y_test = load_data()
-
+    X_train, y_train, X_test, y_test = X_train.to_numpy(), y_train.to_numpy(), X_test.to_numpy(), y_test.to_numpy()
     # Plotting convergence rate of logistic regression over SA heart disease data
-    raise NotImplementedError()
+    losses = []
+    for alpha in np.arange(0,1,0.01):
+        lr = LogisticRegression(alpha=alpha, include_intercept=False).fit(X_train,y_train)
+        losses.append(lr.loss(X_test, y_test))
+    fig = go.Figure(go.Scatter(x=np.arange(0,1,0.01), y = losses))
+    fig.update_layout(title="Logistic regression convergence rate for "
+                            "different alpha threshold",
+                      xaxis_title="convergence rate", yaxis_title=" alpha threshold")
+    fig.write_image(f'logistic_regression_convergence_rate_for_alpha.png')
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+    lr = LogisticRegression(alpha=0.5,penalty='L1')
+
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
+#    compare_fixed_learning_rates()
+#    compare_exponential_decay_rates()
     fit_logistic_regression()

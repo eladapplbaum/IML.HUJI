@@ -6,6 +6,8 @@ from IMLearn import BaseModule
 from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
+from IMLearn.metrics import misclassification_error
+from IMLearn.model_selection import cross_validate
 from IMLearn.utils import split_train_test
 
 import plotly.graph_objects as go
@@ -107,7 +109,7 @@ def compare_fixed_learning_rates(
                               xaxis_title="Iteration",
                               yaxis_title="norm")
             fig.write_image(f'convergence_rate_fixed_{name}_{eta}.png')
-
+            print(f'model {name} eta: {eta} loss: {callback[1][np.argmin(callback[1])]}')
 
 def compare_exponential_decay_rates(
         init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
@@ -123,6 +125,8 @@ def compare_exponential_decay_rates(
         gd.fit(L1(init.copy()), np.empty(0), np.empty(0))
         scatters.append(
             go.Scatter(x=np.arange(gd.max_iter_), y=callback[1],name=f'gamma={gamma}'))
+        print(
+            f'l1 exp eta = 0.1: gama: {gamma} loss: {callback[1][np.argmin(callback[1])]}')
 
     # Plot algorithm's convergence for the different values of gamma
     fig = go.Figure(data=scatters)
@@ -179,24 +183,52 @@ def fit_logistic_regression():
     X_train, y_train, X_test, y_test = load_data()
     X_train, y_train, X_test, y_test = X_train.to_numpy(), y_train.to_numpy(), X_test.to_numpy(), y_test.to_numpy()
     # Plotting convergence rate of logistic regression over SA heart disease data
-    losses = []
-    for alpha in np.arange(0,1,0.01):
-        lr = LogisticRegression(alpha=alpha, include_intercept=False).fit(X_train,y_train)
-        losses.append(lr.loss(X_test, y_test))
-    fig = go.Figure(go.Scatter(x=np.arange(0,1,0.01), y = losses))
-    fig.update_layout(title="Logistic regression convergence rate for "
-                            "different alpha threshold",
-                      xaxis_title="convergence rate", yaxis_title=" alpha threshold")
-    fig.write_image(f'logistic_regression_convergence_rate_for_alpha.png')
-
+    from sklearn.metrics import roc_curve, auc
+    gd = GradientDescent(FixedLR(1e-4), max_iter=20000)
+    model = LogisticRegression(solver=gd)
+    model.fit(X_train, y_train)
+    y_prob = model.predict_proba(X_train)
+    fpr, tpr, thresholds = roc_curve(y_train, y_prob)
+    fig = go.Figure(
+        data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
+                         line=dict(color="black", dash='dash'),
+                         name="Random Class Assignment"),
+              go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds,
+                         name="", showlegend=False, marker_size=5,
+                         # marker_color=c[1][1],
+                         hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
+        layout=go.Layout(
+            title=rf"$\text{{ROC Curve Of Fitted Model}}={auc(fpr, tpr):.6f}$",
+            xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+            yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
+    fig.write_image(f'ROC.png')
+    best_alpha = thresholds[np.argmax(tpr - fpr)]
+    model = LogisticRegression(solver=gd, alpha=best_alpha)
+    best_alpha_loss = model.fit(X_train, y_train)._loss(X_test, y_test)
+    print(f'best_alpha: {best_alpha}')
+    print(f'best_alpha_loss: {best_alpha_loss}')
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    lr = LogisticRegression(alpha=0.5,penalty='L1')
+
+    gd = GradientDescent(FixedLR(1e-4), max_iter=20000)
+    for reg in ["l1", "l2"]:
+        val = []
+        lams = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+        for lam in lams:
+            model = LogisticRegression(solver=gd, penalty="l1", alpha=0.5, lam=lam)
+            tr_sc, val_sc = cross_validate(estimator=model, X=X_train, y=y_train,
+                           scoring=misclassification_error)
+            val.append(val_sc)
+        c_lam = lams[np.argmin(val)]
+        model = LogisticRegression(solver=gd, penalty=reg, alpha=0.5, lam=c_lam)
+        model.fit(X_train, y_train)
+        print(f'for model {reg} best lamda is: {c_lam} with loss: {model.loss(X_test, y_test)}')
+
 
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-#    compare_fixed_learning_rates()
-#    compare_exponential_decay_rates()
+    # compare_fixed_learning_rates()
+    # compare_exponential_decay_rates()
     fit_logistic_regression()

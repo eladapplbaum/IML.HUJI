@@ -127,7 +127,7 @@ class GradientDescent:
         w_sum = f.weights
         num_of_iter = 0
         for t in range(self.max_iter_):
-            num_of_iter = t
+            num_of_iter +=1
             eta = self.learning_rate_.lr_step(t=t)
             val = f.compute_output(X=X, y=y)
             grad = f.compute_jacobian(X=X, y=y)
@@ -142,8 +142,8 @@ class GradientDescent:
             w_sum += f.weights
             self.callback_(solver=self,
                            weights=f.weights_,
-                           val=f.compute_output(X=X, y=y),
-                           grad=f.compute_jacobian(X=X, y=y),
+                           val=val,
+                           grad=grad,
                            t=num_of_iter,
                            eta=eta,
                            delta=delta)

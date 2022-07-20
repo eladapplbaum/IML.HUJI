@@ -1,7 +1,11 @@
 import numpy as np
+from pandas import get_dummies
+
 from IMLearn.base.base_module import BaseModule
 from IMLearn.metrics.loss_functions import cross_entropy, softmax
 
+def diag(to_diag, opt):
+    return np.einsum('ki,kj->kij', to_diag, opt)
 
 class FullyConnectedLayer(BaseModule):
     """
@@ -48,7 +52,14 @@ class FullyConnectedLayer(BaseModule):
         Weights are randomly initialized following N(0, 1/input_dim)
         """
         super().__init__()
-        raise NotImplementedError()
+        self.include_intercept = include_intercept
+        self.activation = activation
+        self.output_dim = output_dim
+        self.input_dim = input_dim
+        if self.include_intercept:
+            self.input_dim = input_dim + 1
+        self.weights_ = np.random.normal(0, 1 / self.input_dim,
+                                         (self.input_dim, output_dim))
 
     def compute_output(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -65,7 +76,12 @@ class FullyConnectedLayer(BaseModule):
         output: ndarray of shape (n_samples, output_dim)
             Value of function at point self.weights
         """
-        raise NotImplementedError()
+
+        if self.include_intercept:
+            X = np.c_[np.ones(X.shape[0]), X]
+        if self.activation:
+            return self.activation.compute_output(X = X @ self.weights)
+        return X @ self.weights
 
     def compute_jacobian(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -81,8 +97,9 @@ class FullyConnectedLayer(BaseModule):
         output: ndarray of shape (input_dim, n_samples)
             Derivative with respect to self.weights at point self.weights
         """
-        raise NotImplementedError()
-
+        if self.activation:
+            return self.activation.compute_jacobian(X=X)
+        return np.ones(X.shape)
 
 class ReLU(BaseModule):
     """
@@ -92,34 +109,30 @@ class ReLU(BaseModule):
     def compute_output(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute element-wise value of activation
-
         Parameters:
         -----------
         X: ndarray of shape (n_samples, input_dim)
             Input data to be passed through activation
-
         Returns:
         --------
         output: ndarray of shape (n_samples, input_dim)
             Data after performing the ReLU activation function
         """
-        raise NotImplementedError()
+        return np.maximum(0, X)
 
     def compute_jacobian(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute module derivative with respect to given data
-
         Parameters:
         -----------
         X: ndarray of shape (n_samples, input_dim)
             Input data to compute derivative with respect to
-
         Returns:
         -------
         output: ndarray of shape (n_samples,)
             Element-wise derivative of ReLU with respect to given data
         """
-        raise NotImplementedError()
+        return np.where(X > 0, 1, 0)
 
 
 class CrossEntropyLoss(BaseModule):
@@ -145,7 +158,7 @@ class CrossEntropyLoss(BaseModule):
         output: ndarray of shape (n_samples,)
             cross-entropy loss value of given X and y
         """
-        raise NotImplementedError()
+        return cross_entropy(get_dummies(y).to_numpy(), softmax(X))
 
     def compute_jacobian(self, X: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -164,5 +177,9 @@ class CrossEntropyLoss(BaseModule):
         output: ndarray of shape (n_samples, input_dim)
             derivative of cross-entropy loss with respect to given input
         """
-        raise NotImplementedError()
+        return softmax(X) - get_dummies(y).to_numpy()
+
+
+
+
 

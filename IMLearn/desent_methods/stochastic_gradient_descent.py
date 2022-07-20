@@ -58,7 +58,11 @@ class StochasticGradientDescent:
             Callable function receives as input any argument relevant for the current GD iteration. Arguments
             are specified in the `GradientDescent.fit` function
         """
-        raise NotImplementedError()
+        self.callback = callback
+        self.batch_size = batch_size
+        self.max_iter = max_iter
+        self.tol = tol
+        self.learning_rate = learning_rate
 
     def fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray):
         """
@@ -107,7 +111,28 @@ class StochasticGradientDescent:
             - batch_indices: np.ndarray of shape (n_batch,)
                 Sample indices used in current SGD iteration
         """
-        raise NotImplementedError()
+        min_objective = f.compute_output(X=X, y=y)
+        sum_w = np.zeros(f.weights.shape)
+        num_of_iter = 0
+        for delta in range(self.max_iter):
+            num_of_iter += 1
+            prev = f.weights
+            val, jac, eta = self._partial_fit(f, X, y, delta)
+            sum_w += f.weights
+            w_t = f.compute_output(X=X, y=y)
+            if w_t < min_objective:
+                min_objective = w_t
+            delta = np.linalg.norm(f.weights - prev, ord=2)
+            if delta < self.tol:
+                break
+            self.callback(solver=self,
+                           weights=f.weights,
+                           val=w_t,
+                           grad=jac,
+                           t=num_of_iter,
+                           eta=eta,
+                           delta=delta)
+        return f.weights
 
     def _partial_fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray, t: int) -> Tuple[np.ndarray, np.ndarray, float]:
         """
@@ -138,4 +163,10 @@ class StochasticGradientDescent:
         eta: float
             learning rate used at current iteration
         """
-        raise NotImplementedError()
+        index = np.random.choice(range(len(X)), self.batch_size)
+        batch_X, batch_Y = X[index, :], y[index]
+        val = f.compute_output(X=batch_X, y=batch_Y)
+        eta = self.learning_rate.lr_step(t=t)
+        jac = f.compute_jacobian(X=batch_X, y=batch_Y)
+        f.weights = f.weights - eta * jac / batch_X.shape[0]
+        return val, jac, eta

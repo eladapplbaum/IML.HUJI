@@ -70,8 +70,8 @@ class BaseEstimator(ABC):
         ------
         ValueError is raised if ``self.predict`` was called before calling ``self.fit``
         """
-        if not self.fitted_:
-            raise ValueError("Estimator must first be fitted before calling ``predict``")
+        # if not self.fitted_:
+            # raise ValueError("Estimator must first be fitted before calling ``predict``")
         return self._predict(X)
 
     def loss(self, X: np.ndarray, y: np.ndarray) -> float:

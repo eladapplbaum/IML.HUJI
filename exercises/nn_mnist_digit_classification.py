@@ -104,7 +104,7 @@ def callback5(**kwargs):
     return callback, values, weights, grads
 
 
-def callback10(**kwargs):
+def callback_10(**kwargs):
     losses, times = [], []
 
     def callback(**kwargs):
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # ---------------------------------------------------------------------------------------------#
     # Question 9: Most/Least confident predictions                                                 #
     # ---------------------------------------------------------------------------------------------#
-    raise NotImplementedError()
+    # raise NotImplementedError()
 
     # ---------------------------------------------------------------------------------------------#
     # Question 10: GD vs GDS Running times                                                         #
@@ -228,3 +228,4 @@ if __name__ == '__main__':
         xaxis_title="losse",
         yaxis_title="time")
     fig.write_image(f'Q8gd_sgd.png')
+    print("done")

@@ -168,7 +168,7 @@ if __name__ == '__main__':
         nn._fit(train_X, train_y)
 
         fig = plot_decision_boundary(nn, lims, train_X, train_y,
-                                     title="Boundaries learned by network")
+                                     title=f"hidden neurons={neurons}")
         fig.write_image(f'Q1_plot_decision_boundary{neurons}.png')
         performance = accuracy(test_y, nn._predict(test_X))
         print(f"Q1: accuracy over test = {performance}, neurons ={neurons}")
@@ -183,7 +183,7 @@ if __name__ == '__main__':
                                         include_intercept=True)
         nn = NeuralNetwork(modules=[l1], loss_fn=CrossEntropyLoss(), solver=grad)
         nn._fit(train_X, train_y)
-        fig = plot_decision_boundary(nn, lims, train_X, train_y, title="Test")
+        fig = plot_decision_boundary(nn, lims, train_X, train_y, title=f"linear neurons={neurons}")
         fig.write_image(f'Q2_plot_decision_boundary{neurons}.png')
         performance = accuracy(test_y, nn._predict(test_X))
         print(f"Q: 2accuracy over test = {performance}, neurons ={neurons}")
@@ -199,7 +199,7 @@ if __name__ == '__main__':
                        mode="markers", name="gradient norm")]
         )
         fig.update_layout(
-            title=f"loss and gradient nomrn as function of iteration",
+            title=f"loss and gradient nomrn as function of iteration. neurons={neurons}",
             xaxis_title="Iteration",
             yaxis_title="loss and gradient norm")
         fig.write_image(f'Q3neurons={neurons}.png')

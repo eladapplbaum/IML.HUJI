@@ -108,8 +108,9 @@ def callback_10(**kwargs):
     losses, times = [], []
 
     def callback(**kwargs):
-        losses.append(kwargs["loss"])
-        times.append(kwargs["time"])
+        times.append(time.time())
+        losses.append(kwargs["val"])
+
 
     return callback, losses, times
 
@@ -153,7 +154,7 @@ if __name__ == '__main__':
         xaxis_title="Iteration",
         yaxis_title="loss and gradient norm")
     fig.write_image(f'Q6.png')
-    # Plotting test true- vs predicted confusion matrix
+
     print(confusion_matrix(test_y, nn._predict(train_y)))
     # ---------------------------------------------------------------------------------------------#
     # Question 8: Network without hidden layers using SGD                                          #
@@ -166,7 +167,15 @@ if __name__ == '__main__':
     # ---------------------------------------------------------------------------------------------#
     # Question 9: Most/Least confident predictions                                                 #
     # ---------------------------------------------------------------------------------------------#
-    # raise NotImplementedError()
+    sevens = test_X[test_y == 7]
+    confidence = np.max(nn.compute_prediction(sevens), axis=1)
+    sevens = np.c_[confidence, sevens]
+    sevens = sevens[sevens[:, 0].argsort()]
+    sevens = sevens[:, 1:]
+    fig = plot_images_grid(sevens[:64], "low confidence")
+    fig.write_image("low_conf.png")
+    fig = plot_images_grid(sevens[-64:], "high confidence")
+    fig.write_image("high_conf.png")
 
     # ---------------------------------------------------------------------------------------------#
     # Question 10: GD vs GDS Running times                                                         #
@@ -187,9 +196,9 @@ if __name__ == '__main__':
                                      include_intercept=True)
     gd = GradientDescent(learning_rate=lr,
                          max_iter=10000,
-                         callback=callback, tol=10 ** -10)
+                        tol=10 ** -10, callback=gd_callback)
     nn_gd = NeuralNetwork(modules=[layer_one, hidden_one, hidden_two],
-                          loss_fn=loss, solver=gd, callback=gd_callback)
+                          loss_fn=loss, solver=gd)
     nn_gd._fit(train_X[:, 2500], train_y[:, 2500])
     fig = go.Figure(
         go.Scatter(x=gd_losses, y=gd_times,
@@ -202,10 +211,10 @@ if __name__ == '__main__':
     fig.write_image(f'Q8gd.png')
 
     sgd = StochasticGradientDescent(learning_rate=lr, max_iter=10000,
-                                    batch_size=64, callback=callback,
+                                    batch_size=64, callback=sgd_callback,
                                     tol=10 ** -10)
     nn_sgd = NeuralNetwork(modules=[layer_one, hidden_one, hidden_two],
-                           loss_fn=loss, solver=sgd, callback=sgd_callback)
+                           loss_fn=loss, solver=sgd)
     nn_sgd._fit(train_X[:, 2500], train_y[:, 2500])
     fig = go.Figure(
         go.Scatter(x=sgd_losses, y=sgd_times,

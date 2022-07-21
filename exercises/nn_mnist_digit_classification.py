@@ -199,7 +199,7 @@ if __name__ == '__main__':
                         tol=10 ** -10, callback=gd_callback)
     nn_gd = NeuralNetwork(modules=[layer_one, hidden_one, hidden_two],
                           loss_fn=loss, solver=gd)
-    nn_gd._fit(train_X[:, 2500], train_y[:, 2500])
+    nn_gd._fit(train_X[:2500], train_y[:2500])
     fig = go.Figure(
         go.Scatter(x=gd_losses, y=gd_times,
                    mode="markers"),
@@ -215,7 +215,7 @@ if __name__ == '__main__':
                                     tol=10 ** -10)
     nn_sgd = NeuralNetwork(modules=[layer_one, hidden_one, hidden_two],
                            loss_fn=loss, solver=sgd)
-    nn_sgd._fit(train_X[:, 2500], train_y[:, 2500])
+    nn_sgd._fit(train_X[:2500], train_y[:2500])
     fig = go.Figure(
         go.Scatter(x=sgd_losses, y=sgd_times,
                    mode="markers"),
